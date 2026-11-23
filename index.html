@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CyberTalent360 Profile Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a step-by-step builder on the left, and a live ID badge on the right that fills in as the student types. */
+:root{
+  --paper:#EDEFF2; --card:#FFFFFF; --ink:#0E1A2B; --muted:#566377; --line:#D3D9E2;
+  --accent:#D9480F; --accent-soft:#FDE8DE; --on-accent:#FFFFFF; --ok:#17785A; --ok-soft:#DDF3EA; --warn:#9A6200;
+  --display:'Bricolage Grotesque','Segoe UI',Arial,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1420; --card:#131E2F; --ink:#E8EDF5; --muted:#95A2B6; --line:#26364C;
+    --accent:#FF7A45; --accent-soft:#3A2218; --on-accent:#1A0B03; --ok:#3DD6A0; --ok-soft:#10312A; --warn:#E8B04A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1420; --card:#131E2F; --ink:#E8EDF5; --muted:#95A2B6; --line:#26364C;
+  --accent:#FF7A45; --accent-soft:#3A2218; --on-accent:#1A0B03; --ok:#3DD6A0; --ok-soft:#10312A; --warn:#E8B04A;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+[hidden]{display:none!important}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 64px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+.brand{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.01em;white-space:nowrap}
+.brand span{color:var(--accent)}
+.bar{flex:1;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.pct{font-family:var(--mono);font-size:14px;min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums}
+.rank{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+@media(max-width:560px){.rank{display:none}}
+
+.intro{padding:28px 0 20px;max-width:760px}
+.intro h1{font-size:clamp(30px,5vw,48px);font-weight:800;letter-spacing:-.02em}
+.intro p{color:var(--muted);margin:10px 0 0;font-size:17px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+@media(max-width:960px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+/* stepper */
+.steps{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:6px;scrollbar-width:thin}
+.step{flex:0 0 auto;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:7px 14px 7px 8px;cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
+.step b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--line);font-family:var(--mono);font-size:12px;font-weight:500}
+.step[aria-current="step"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.step[aria-current="step"] b{background:var(--accent);color:var(--on-accent)}
+.step.done b{background:var(--ok);color:#fff}
+.step.done b::before{content:"\2713"}
+.step.done b span{display:none}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+.panel h2{font-size:28px;font-weight:800;letter-spacing:-.01em}
+.panel .lead{color:var(--muted);margin:6px 0 20px;max-width:60ch}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+@media(max-width:600px){.fields{grid-template-columns:minmax(0,1fr)}}
+.full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
+label.f small{font-weight:400;color:var(--muted);font-size:13px}
+input[type=text],input[type=email],input[type=url],input[type=tel],select,textarea{
+  width:100%;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-weight:400}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input.bad{border-color:#C0392B}
+.hint{font-size:13px;color:var(--muted);min-height:1.2em}
+.hint.err{color:#C0392B}
+
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.primary:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 12px;font-size:14px}
+
+/* skills */
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 18px;padding:12px 14px;background:var(--paper);border-radius:10px;font-size:13px}
+.legend span{display:flex;align-items:center;gap:7px}
+.pips{display:inline-flex;gap:3px}
+.pips i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}
+.pips i.on{background:var(--accent)}
+.domain{margin-bottom:18px}
+.domain h3{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:500;transition:transform .12s}
+.chip:active{transform:scale(.96)}
+.chip[data-l="1"],.chip[data-l="2"]{border-color:var(--muted)}
+.chip[data-l="3"],.chip[data-l="4"]{border-color:var(--accent);background:var(--accent-soft)}
+.proof{font-size:13px;color:var(--warn);margin-top:6px}
+.addtool{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.addtool input{flex:1;min-width:160px}
+
+/* repeating cards */
+.rows{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.row{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--paper);position:relative}
+.row .rm{position:absolute;top:8px;right:8px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:6px}
+.row .rm:hover{color:#C0392B}
+.row .no{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:10px}
+.none{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px;color:var(--muted)}
+.tog{display:flex;flex-wrap:wrap;gap:8px}
+.tog button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:8px 14px;cursor:pointer;font-weight:500;font-size:14px}
+.tog button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.sw:last-of-type{border-bottom:0}
+.check{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--paper);margin-bottom:10px;font-size:15px}
+.check input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent);flex:none}
+
+.review{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.review div{background:var(--paper);border-radius:10px;padding:12px}
+.review b{display:block;font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums}
+.review span{font-size:13px;color:var(--muted)}
+.missing{background:var(--accent-soft);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px}
+.okbox{background:var(--ok-soft);color:var(--ok);border-radius:10px;padding:14px;margin-top:14px;font-weight:600}
+.copybox{width:100%;min-height:120px;font-family:var(--mono);font-size:12px;margin-top:10px}
+
+/* badge */
+.badgecol{position:sticky;top:76px}
+@media(max-width:960px){.badgecol{position:static}}
+.badge{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 12px 30px -18px rgba(14,26,43,.45)}
+.badge .strip{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:9px 16px;display:flex;justify-content:space-between}
+.badge .strip i{font-style:normal;opacity:.7}
+.badge .body{padding:18px 16px 16px}
+.bhead{display:flex;gap:14px;align-items:center}
+.ring{position:relative;width:74px;height:74px;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:7}
+.ring .bg{stroke:var(--line)}
+.ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.bname{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1;overflow-wrap:anywhere}
+.bname.ph{color:var(--muted)}
+.breg{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.bsec{margin-top:16px}
+.bsec h4{margin:0 0 7px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:13px;border-radius:6px;padding:3px 8px;background:var(--paper);border:1px solid var(--line)}
+.tag.strong{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.tag.ph{color:var(--muted);border-style:dashed;background:transparent}
+.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.counts div{background:var(--paper);border-radius:8px;padding:8px 2px}
+.counts b{display:block;font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
+.counts span{font-size:11px;color:var(--muted)}
+.stamp{margin:16px 0 0;border:2px solid var(--ok);color:var(--ok);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:.1em;text-align:center;transform:rotate(-2deg);animation:stamp .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes stamp{from{transform:scale(1.6) rotate(-8deg);opacity:0}to{transform:rotate(-2deg);opacity:1}}
+.note{font-size:13px;color:var(--muted);margin-top:12px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">CyberTalent<span>360</span></div>
+    <div class="bar" role="progressbar" aria-label="Profile completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar"><i id="barfill"></i></div>
+    <div class="pct" id="pct">0%</div>
+    <div class="rank" id="rank">Observer</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Build your Cyber ID.</h1>
+    <p>Department of CSE (Cyber Security), KGiSL Institute of Technology. Tell us what you can really do. Your badge fills in as you go, and your faculty coordinator checks anything you claim at level 3 or above.</p>
+  </section>
+
+  <div class="grid">
+    <div>
+      <nav class="steps" id="steps" aria-label="Sections"></nav>
+      <section class="panel" id="panel" aria-live="polite"></section>
+    </div>
+    <aside class="badgecol" aria-label="Your badge">
+      <div class="badge" id="badge"></div>
+      <p class="note">Your badge is a live preview. Nothing is saved to the department until you press Submit on the last step.</p>
+    </aside>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- settings: paste your Apps Script web app address here ---------- */
+var ENDPOINT='https://script.google.com/macros/s/AKfycbzBa2EwzmwW-x4itCUVGIzNhDvo9wzqeCXRxkhKquFyVDlSv4f_LHjtcKIhhAWCzZC5/exec';
+var ALLOWED_DOMAIN='kgkite.ac.in';
+
+/* ---------- data ---------- */
+var DOMAINS=[
+ ['Programming',['Python','C','Java','JavaScript']],
+ ['Operating systems',['Linux','Windows','Kali Linux']],
+ ['Networking',['Wireshark','Nmap','Packet Tracer']],
+ ['SIEM',['Splunk','ELK Stack','Microsoft Sentinel']],
+ ['Threat detection',['Suricata','Zeek','Snort']],
+ ['VAPT',['Burp Suite','Metasploit','OWASP ZAP']],
+ ['Digital forensics',['Autopsy','FTK Imager','Volatility']],
+ ['Malware analysis',['Ghidra','IDA Free','REMnux']],
+ ['Cloud security',['AWS','Azure','GCP']],
+ ['Data science',['NumPy','Pandas','Scikit-learn','TensorFlow']],
+ ['Governance',['ISO 27001','GDPR','DPDP Act']]
+];
+var LEVELS=['Not rated','Heard of it','Used it in lab','Can do it on my own','Built or taught with it'];
+var INTERESTS=['SOC and threat intelligence','Penetration testing','Digital forensics','Malware analysis','AI/ML in cybersecurity','Cloud and IoT security','Data privacy and GRC','Blockchain security','Drone and OT/ICS security'];
+var YEARS=['I year','II year','III year','IV year'];
+var CERT_TYPES=['Professional certification','Course completion','Participation certificate'];
+var COMP_TYPES=['CTF','Hackathon','Paper presentation','Technical symposium','Research publication or patent','Other'];
+var COMP_RESULT=['Participated','Shortlisted or finalist','Winner or podium','Award or recognition'];
+var INTERN_STATUS=['Attended','Completed','Delivered a project'];
+var PROJ_STATUS=['Ongoing','Completed'];
+var STEPS=[
+ {id:'who',t:'You'},{id:'skills',t:'Skills'},{id:'certs',t:'Certificates'},{id:'projects',t:'Projects'},
+ {id:'interns',t:'Internships'},{id:'comps',t:'Contests'},{id:'goals',t:'Goals'},{id:'submit',t:'Submit'}
+];
+
+function blank(){return{
+  p:{name:'',reg:'',year:'',email:'',phone:'',linkedin:'',github:''},
+  skills:{},extra:[],
+  certs:[],projects:[],interns:[],comps:[],
+  none:{certs:false,projects:false,interns:false,comps:false},
+  interests:[],
+  avail:{intern:'',consult:'',research:'',mode:'',duration:''},
+  consent:{store:false,share:false},
+  submitted:false
+};}
+var S=blank(), cur=0;
+
+/* ---------- helpers ---------- */
+function h(tag,attrs){
+  var e=document.createElement(tag);
+  attrs=attrs||{};
+  for(var k in attrs){
+    var v=attrs[k];
+    if(k==='class')e.className=v;
+    else if(k==='text')e.textContent=v;
+    else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);
+    else if(v===true)e.setAttribute(k,'');
+    else if(v!==false&&v!=null)e.setAttribute(k,v);
+  }
+  (function add(list){
+    for(var i=0;i<list.length;i++){
+      var c=list[i];
+      if(c==null||c===false)continue;
+      if(Array.isArray(c)){add(c);continue}
+      e.appendChild(typeof c==='string'?document.createTextNode(c):c);
+    }
+  })([].slice.call(arguments,2));
+  return e;
+}
+function $(id){return document.getElementById(id)}
+var saveTimer=null;
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){try{localStorage.setItem('ct360-draft',JSON.stringify(S))}catch(e){}},300);
+}
+function emailOk(v){
+  v=v.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))return false;
+  return !ALLOWED_DOMAIN||v.slice(-(ALLOWED_DOMAIN.length+1))==='@'+ALLOWED_DOMAIN;
+}
+function regOk(v){return /^\d{6}[A-Za-z]{3}\d{3}$/.test(v.trim())}
+function urlOk(v){return !v||/^https?:\/\/\S+\.\S+/.test(v.trim())}
+function ratedSkills(){
+  var out=[];
+  Object.keys(S.skills).forEach(function(k){if(S.skills[k]>0)out.push([k,S.skills[k]])});
+  return out;
+}
+
+/* ---------- completion ---------- */
+function sectionDone(id){
+  switch(id){
+    case 'who':return !!(S.p.name.trim()&&regOk(S.p.reg)&&S.p.year&&emailOk(S.p.email));
+    case 'skills':return ratedSkills().length>=3;
+    case 'certs':return S.certs.some(function(c){return c.name.trim()})||S.none.certs;
+    case 'projects':return S.projects.some(function(c){return c.title.trim()})||S.none.projects;
+    case 'interns':return S.interns.some(function(c){return c.org.trim()})||S.none.interns;
+    case 'comps':return S.comps.some(function(c){return c.name.trim()})||S.none.comps;
+    case 'goals':return S.interests.length>0&&!!S.avail.mode;
+    case 'submit':return S.consent.store;
+  }
+  return false;
+}
+var WEIGHT={who:20,skills:20,certs:10,projects:15,interns:5,comps:10,goals:15,submit:5};
+function score(){
+  var s=0;
+  STEPS.forEach(function(st){if(sectionDone(st.id))s+=WEIGHT[st.id]});
+  if(S.p.name.trim()&&!sectionDone('who')){s+=Math.min(8,Math.round(WEIGHT.who/3))}
+  var r=ratedSkills().length;
+  if(!sectionDone('skills')&&r>0)s+=Math.round(WEIGHT.skills*r/6);
+  return Math.min(100,s);
+}
+function rankName(p){return p>=100?'Architect':p>=75?'Operator':p>=50?'Analyst':p>=25?'Cadet':'Observer'}
+
+/* ---------- badge ---------- */
+function renderBadge(){
+  var p=score(), b=$('badge'), C=2*Math.PI*30;
+  var rated=ratedSkills().sort(function(a,b){return b[1]-a[1]});
+  var strong=rated.filter(function(x){return x[1]>=3});
+  var skillTags=h('div',{class:'tags'});
+  if(rated.length===0)['Python','Linux','Wireshark'].forEach(function(n){skillTags.appendChild(h('span',{class:'tag ph',text:n}))});
+  else rated.slice(0,12).forEach(function(x){skillTags.appendChild(h('span',{class:'tag'+(x[1]>=3?' strong':''),text:x[0]}))});
+  if(rated.length>12)skillTags.appendChild(h('span',{class:'tag',text:'+'+(rated.length-12)}));
+  var open=[];
+  if(S.avail.intern==='Yes')open.push('Internships');
+  if(S.avail.consult==='Yes')open.push('Consultancy');
+  if(S.avail.research==='Yes')open.push('Research');
+  var cnt=function(n,l){return h('div',null,h('b',{text:String(n)}),h('span',{text:l}))};
+  var n=function(a,k){return a.filter(function(x){return x[k]&&x[k].trim()}).length};
+  b.textContent='';
+  b.appendChild(h('div',{class:'strip'},h('span',{text:'KiTE · CSE Cyber Security'}),h('i',{text:'ID'})));
+  b.appendChild(h('div',{class:'body'},
+    h('div',{class:'bhead'},
+      h('div',{class:'ring'},
+        (function(){
+          var ns='http://www.w3.org/2000/svg';
+          var svg=document.createElementNS(ns,'svg');svg.setAttribute('width','74');svg.setAttribute('height','74');svg.setAttribute('viewBox','0 0 74 74');
+          var c1=document.createElementNS(ns,'circle');c1.setAttribute('class','bg');c1.setAttribute('cx','37');c1.setAttribute('cy','37');c1.setAttribute('r','30');
+          var c2=document.createElementNS(ns,'circle');c2.setAttribute('class','fg');c2.setAttribute('cx','37');c2.setAttribute('cy','37');c2.setAttribute('r','30');
+          c2.setAttribute('stroke-dasharray',String(C));c2.setAttribute('stroke-dashoffset',String(C*(1-p/100)));
+          svg.appendChild(c1);svg.appendChild(c2);return svg;
+        })(),
+        h('b',{text:p+'%'})
+      ),
+      h('div',null,
+        h('div',{class:'bname'+(S.p.name.trim()?'':' ph'),text:S.p.name.trim()||'Your name'}),
+        h('div',{class:'breg',text:(S.p.reg.trim()||'Register number')+(S.p.year?' · '+S.p.year:'')})
+      )
+    ),
+    h('div',{class:'bsec'},h('h4',{text:strong.length?'Skills ('+strong.length+' at level 3 or above)':'Skills'}),skillTags),
+    h('div',{class:'bsec'},h('h4',{text:'On record'}),
+      h('div',{class:'counts'},
+        cnt(rated.length,'skills'),cnt(n(S.certs,'name'),'certs'),cnt(n(S.projects,'title'),'projects'),cnt(n(S.comps,'name'),'contests'))),
+    h('div',{class:'bsec'},h('h4',{text:'Open to'}),
+      h('div',{class:'tags'},open.length?open.map(function(x){return h('span',{class:'tag strong',text:x})}):[h('span',{class:'tag ph',text:'Set on the Goals step'})])),
+    S.submitted?h('div',{class:'stamp',text:'Submitted'}):null
+  ));
+}
+function renderTop(){
+  var p=score();
+  $('barfill').style.width=p+'%';
+  $('bar').setAttribute('aria-valuenow',String(p));
+  $('pct').textContent=p+'%';
+  $('rank').textContent=rankName(p);
+}
+function renderSteps(){
+  var nav=$('steps');nav.textContent='';
+  STEPS.forEach(function(st,i){
+    var b=h('button',{type:'button',class:'step'+(sectionDone(st.id)&&i!==7?' done':''),'aria-current':i===cur?'step':null,onclick:function(){go(i)}},
+      h('b',null,h('span',{text:String(i+1)})),st.t);
+    nav.appendChild(b);
+  });
+  var active=nav.querySelector('[aria-current]');
+  if(active&&active.scrollIntoView)try{active.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}
+}
+function refresh(){renderTop();renderBadge();renderSteps();persist()}
+
+/* ---------- inputs ---------- */
+function field(label,key,obj,opt){
+  opt=opt||{};
+  var el;
+  if(opt.select){
+    el=h('select',{id:opt.id,onchange:function(){obj[key]=el.value;refresh()}});
+    el.appendChild(h('option',{value:'',text:'Choose'}));
+    opt.select.forEach(function(o){el.appendChild(h('option',{value:o,text:o}))});
+    el.value=obj[key]||'';
+  }else{
+    el=h('input',{id:opt.id,type:opt.type||'text',placeholder:opt.ph||'',autocomplete:opt.ac||'off',maxlength:opt.max||200});
+    el.value=obj[key]||'';
+    el.addEventListener('input',function(){
+      obj[key]=el.value;
+      if(opt.check){var ok=opt.check(el.value);el.classList.toggle('bad',!!el.value&&!ok);if(hint)hint.textContent=el.value&&!ok?opt.err:(opt.help||'');hint&&hint.classList.toggle('err',!!el.value&&!ok)}
+      refresh();
+    });
+  }
+  var hint=opt.check||opt.help?h('span',{class:'hint',text:opt.help||''}):null;
+  var lab=h('label',{class:'f'+(opt.full?' full':''),for:opt.id},label,opt.small?h('small',{text:opt.small}):null,el,hint);
+  return lab;
+}
+var uid=0;function nid(){return 'f'+(++uid)}
+
+/* ---------- panels ---------- */
+function pWho(){
+  var f=h('div',{class:'fields'});
+  f.appendChild(field('Full name','name',S.p,{id:nid(),ac:'name',full:true,ph:'As on your college ID'}));
+  f.appendChild(field('Register number','reg',S.p,{id:nid(),ph:'711724UCY000',check:regOk,err:'Use the 12-character format, like 711724UCY111.',help:'Six digits, then UCY, then three digits.'}));
+  f.appendChild(field('Year','year',S.p,{id:nid(),select:YEARS}));
+  f.appendChild(field('College email','email',S.p,{id:nid(),type:'email',ac:'email',check:emailOk,err:'Use your college email, ending in @'+ALLOWED_DOMAIN+'.',ph:'name@kgkite.ac.in'}));
+  f.appendChild(field('Mobile number','phone',S.p,{id:nid(),type:'tel',ac:'tel',small:'Optional. Shared only if you opt in at the end.'}));
+  f.appendChild(field('LinkedIn','linkedin',S.p,{id:nid(),type:'url',check:urlOk,err:'Start with https://',ph:'https://linkedin.com/in/…',small:'Optional'}));
+  f.appendChild(field('GitHub','github',S.p,{id:nid(),type:'url',check:urlOk,err:'Start with https://',ph:'https://github.com/…',small:'Optional'}));
+  return [h('h2',{text:'Who are you?'}),h('p',{class:'lead',text:'Start with the basics. Your register number is how the department matches this profile to your records.'}),f];
+}
+function pips(l){var w=h('span',{class:'pips','aria-hidden':'true'});for(var i=1;i<=4;i++)w.appendChild(h('i',{class:i<=l?'on':''}));return w}
+function chip(name){
+  var l=S.skills[name]||0;
+  var b=h('button',{type:'button',class:'chip','data-l':String(l),'aria-label':name+', '+LEVELS[l]+'. Press to change.',onclick:function(){
+    var n=((S.skills[name]||0)+1)%5;S.skills[name]=n;
+    b.setAttribute('data-l',String(n));b.setAttribute('aria-label',name+', '+LEVELS[n]+'. Press to change.');
+    b.replaceChild(pips(n),b.lastChild);
+    proofNote();refresh();
+  }},h('span',{text:name}),pips(l));
+  return b;
+}
+var proofEl=null;
+function proofNote(){
+  if(!proofEl)return;
+  var k=ratedSkills().filter(function(x){return x[1]>=3}).length;
+  proofEl.textContent=k?k+' skill'+(k>1?'s':'')+' at level 3 or above. Keep a project, lab record or portfolio link ready. Your faculty coordinator will ask for it.':'';
+}
+function pSkills(){
+  var wrap=h('div');
+  var lg=h('div',{class:'legend'});
+  for(var i=1;i<=4;i++)lg.appendChild(h('span',null,pips(i),(i)+' · '+LEVELS[i]));
+  wrap.appendChild(lg);
+  DOMAINS.forEach(function(d){
+    var c=h('div',{class:'chips'});d[1].forEach(function(n){c.appendChild(chip(n))});
+    wrap.appendChild(h('div',{class:'domain'},h('h3',{text:d[0]}),c));
+  });
+  var ex=h('div',{class:'chips',id:'extra'});
+  S.extra.forEach(function(n){ex.appendChild(chip(n))});
+  var inp=h('input',{type:'text',id:nid(),placeholder:'A tool we missed, for example Nessus',maxlength:40,'aria-label':'Add a tool'});
+  var add=function(){
+    var v=inp.value.trim();if(!v)return;
+    var all=[].concat.apply([],DOMAINS.map(function(d){return d[1]})).concat(S.extra);
+    if(all.some(function(x){return x.toLowerCase()===v.toLowerCase()})){inp.value='';return}
+    S.extra.push(v);S.skills[v]=1;ex.appendChild(chip(v));inp.value='';refresh();
+  };
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();add()}});
+  wrap.appendChild(h('div',{class:'domain'},h('h3',{text:'Other tools'}),ex,h('div',{class:'addtool'},inp,h('button',{type:'button',class:'btn small',onclick:add,text:'Add tool'}))));
+  proofEl=h('div',{class:'proof',role:'status'});wrap.appendChild(proofEl);proofNote();
+  return [h('h2',{text:'What can you actually do?'}),h('p',{class:'lead',text:'Tap a tool to rate yourself. Each tap moves up one level, and the fifth tap clears it. Be honest: it is better to rate level 2 and prove it later than to claim level 4 and be asked for evidence.'}),wrap];
+}
+
+function listPanel(opts){
+  var arr=S[opts.key];
+  var rowsEl=h('div',{class:'rows'});
+  function draw(){
+    rowsEl.textContent='';
+    arr.forEach(function(item,i){
+      var f=h('div',{class:'fields'});
+      opts.fields.forEach(function(fd){f.appendChild(field(fd[0],fd[1],item,fd[2]?Object.assign({id:nid()},fd[2]):{id:nid()}))});
+      rowsEl.appendChild(h('div',{class:'row'},
+        h('div',{class:'no',text:opts.noun+' '+(i+1)}),
+        h('button',{type:'button',class:'rm','aria-label':'Remove '+opts.noun+' '+(i+1),onclick:function(){arr.splice(i,1);draw();refresh()},text:'Remove'}),f));
+    });
+  }
+  draw();
+  var addBtn=h('button',{type:'button',class:'btn primary small',onclick:function(){
+    arr.push(opts.make());S.none[opts.key]=false;if(noneBox)noneBox.checked=false;draw();refresh();
+    var last=rowsEl.lastChild;if(last){var i=last.querySelector('input,select');if(i)i.focus()}
+  },text:'+ Add '+opts.noun.toLowerCase()});
+  var noneBox=h('input',{type:'checkbox',id:nid(),onchange:function(){S.none[opts.key]=noneBox.checked;refresh()}});
+  noneBox.checked=!!S.none[opts.key];
+  return [h('h2',{text:opts.title}),h('p',{class:'lead',text:opts.lead}),rowsEl,addBtn,
+    h('label',{class:'none',for:noneBox.id},noneBox,opts.none)];
+}
+function pCerts(){return listPanel({key:'certs',noun:'Certificate',title:'Certificates you hold',
+  lead:'List professional certifications, course certificates and participation certificates separately, so each one is shown for what it is. Add the link or credential ID so it can be verified.',
+  none:'I have none yet. That is fine, I will add them later.',
+  make:function(){return{name:'',issuer:'',type:'',year:'',link:''}},
+  fields:[['Certificate name','name',{ph:'CompTIA Security+',full:true}],['Issued by','issuer',{ph:'CompTIA, Cisco, NPTEL…'}],['Kind','type',{select:CERT_TYPES}],['Year completed','year',{ph:'2026',max:4}],['Credential link or ID','link',{ph:'Verification URL or ID'}]]})}
+function pProjects(){return listPanel({key:'projects',noun:'Project',title:'Things you have built',
+  lead:'Projects tell us more than a list of tools. Add what you built, with what, and what your part was.',
+  none:'I have no projects yet.',
+  make:function(){return{title:'',domain:'',tools:'',role:'',status:'',link:''}},
+  fields:[['Project title','title',{ph:'Ransomware detection using ML',full:true}],['Area','domain',{select:['Malware or ransomware detection','Phishing detection','Network intrusion detection','SIEM and log analytics','Vulnerability assessment','Digital forensics','Cloud security','AI-driven cybersecurity','Web or app development','Other']}],['Status','status',{select:PROJ_STATUS}],['Tools and languages','tools',{ph:'Python, Scikit-learn'}],['Your role','role',{ph:'Model development'}],['Repository or demo link','link',{type:'url',ph:'https://github.com/…',full:true}]]})}
+function pInterns(){return listPanel({key:'interns',noun:'Internship',title:'Industry exposure',
+  lead:'Say whether you attended, completed, or delivered a project. These are three different things.',
+  none:'I have not done an internship yet.',
+  make:function(){return{org:'',domain:'',duration:'',status:'',work:''}},
+  fields:[['Organisation','org',{ph:'Company name'}],['Domain','domain',{ph:'SOC, VAPT, development…'}],['Duration','duration',{ph:'4 weeks, Jun 2026'}],['Outcome','status',{select:INTERN_STATUS}],['What you worked on','work',{ph:'One line',full:true}]]})}
+function pComps(){return listPanel({key:'comps',noun:'Contest',title:'Contests and recognition',
+  lead:'CTFs, hackathons, paper presentations, symposiums and awards all count here. Add evidence such as a certificate or result page link.',
+  none:'I have not taken part in any yet.',
+  make:function(){return{name:'',type:'',org:'',date:'',result:'',link:''}},
+  fields:[['Event name','name',{ph:'Smart India Hackathon',full:true}],['Kind','type',{select:COMP_TYPES}],['Result','result',{select:COMP_RESULT}],['Organised by','org',{ph:'Organiser or college'}],['When','date',{ph:'Aug 2026'}],['Evidence link','link',{type:'url',ph:'Certificate or result page',full:true}]]})}
+
+function yn(label,key){
+  var w=h('div',{class:'tog',role:'group','aria-label':label});
+  ['Yes','No'].forEach(function(v){
+    var b=h('button',{type:'button','aria-pressed':S.avail[key]===v?'true':'false',onclick:function(){
+      S.avail[key]=v;[].forEach.call(w.children,function(c){c.setAttribute('aria-pressed',c.textContent===v?'true':'false')});refresh();
+    },text:v});w.appendChild(b);
+  });
+  return h('div',{class:'sw'},h('span',{text:label}),w);
+}
+function pGoals(){
+  var tg=h('div',{class:'tog',role:'group','aria-label':'Areas of interest'});
+  INTERESTS.forEach(function(n){
+    var b=h('button',{type:'button','aria-pressed':S.interests.indexOf(n)>-1?'true':'false',onclick:function(){
+      var i=S.interests.indexOf(n);if(i>-1)S.interests.splice(i,1);else S.interests.push(n);
+      b.setAttribute('aria-pressed',i>-1?'false':'true');refresh();
+    },text:n});tg.appendChild(b);
+  });
+  var mode=h('div',{class:'tog',role:'group','aria-label':'How you can work'});
+  ['On site','Hybrid','Remote'].forEach(function(v){
+    mode.appendChild(h('button',{type:'button','aria-pressed':S.avail.mode===v?'true':'false',onclick:function(){
+      S.avail.mode=v;[].forEach.call(mode.children,function(c){c.setAttribute('aria-pressed',c.textContent===v?'true':'false')});refresh();
+    },text:v}));
+  });
+  var dur=h('select',{id:nid(),onchange:function(){S.avail.duration=dur.value;refresh()}});
+  dur.appendChild(h('option',{value:'',text:'Choose'}));
+  ['2 weeks','1 month','2 months','3 to 6 months'].forEach(function(o){dur.appendChild(h('option',{value:o,text:o}))});dur.value=S.avail.duration||'';
+  return [h('h2',{text:'Where do you want to go?'}),h('p',{class:'lead',text:'When a company asks the department for students, this is how we find the right people.'}),
+    h('div',{class:'domain'},h('h3',{text:'Areas you want to work in (pick any)'}),tg),
+    h('div',{class:'domain'},h('h3',{text:'Availability'}),yn('Interested in internships','intern'),yn('Interested in consultancy projects','consult'),yn('Interested in research projects','research')),
+    h('div',{class:'domain'},h('h3',{text:'How can you work?'}),mode),
+    h('div',{class:'domain'},h('label',{class:'f',for:dur.id},h('span',{class:'f',text:'Preferred internship length'}),dur))];
+}
+
+/* ---------- submit ---------- */
+function missing(){
+  var m=[];
+  if(!S.p.name.trim())m.push('your name');
+  if(!regOk(S.p.reg))m.push('a valid register number');
+  if(!S.p.year)m.push('your year');
+  if(!emailOk(S.p.email))m.push('your college email');
+  if(!S.consent.store)m.push('permission to keep your details in department records');
+  return m;
+}
+function payload(){
+  var d=JSON.parse(JSON.stringify(S));
+  if(!d.consent.share){d.p.phone='';}
+  d.skills=ratedSkills().map(function(x){return{tool:x[0],level:x[1]}});
+  delete d.submitted;
+  d.submittedAt=new Date().toISOString();
+  return d;
+}
+var dbRef=null;
+function pSubmit(){
+  var n=function(a,k){return a.filter(function(x){return x[k]&&x[k].trim()}).length};
+  var sum=h('div',{class:'review'});
+  [[ratedSkills().length,'skills rated'],[ratedSkills().filter(function(x){return x[1]>=3}).length,'at level 3+'],[n(S.certs,'name'),'certificates'],[n(S.projects,'title'),'projects'],[n(S.interns,'org'),'internships'],[n(S.comps,'name'),'contests']]
+   .forEach(function(r){sum.appendChild(h('div',null,h('b',{text:String(r[0])}),h('span',{text:r[1]})))});
+  var miss=h('div',{class:'missing',role:'status'});
+  var out=h('div');
+  var btn=h('button',{type:'button',class:'btn primary',id:'submitbtn',onclick:doSubmit,text:S.submitted?'Update my profile':'Submit my profile'});
+  function upd(){
+    var m=missing();
+    miss.hidden=m.length===0;miss.textContent=m.length?'Still needed: '+m.join(', ')+'.':'';
+    btn.disabled=m.length>0;
+  }
+  var c1=h('input',{type:'checkbox',id:'c1',onchange:function(){S.consent.store=c1.checked;upd();refresh()}});c1.checked=S.consent.store;
+  var c2=h('input',{type:'checkbox',id:'c2',onchange:function(){S.consent.share=c2.checked;refresh()}});c2.checked=S.consent.share;
+  function copyBlock(msg){
+    out.textContent='';
+    out.appendChild(h('div',{class:'missing'},msg));
+    var ta=h('textarea',{class:'copybox',readonly:true,'aria-label':'Your profile as text'});ta.value=JSON.stringify(payload(),null,1);
+    out.appendChild(ta);
+    out.appendChild(h('button',{type:'button',class:'btn small',style:'margin-top:8px',onclick:function(){
+      ta.select();var done=function(){this.textContent='Copied'}.bind(this);
+      try{navigator.clipboard.writeText(ta.value).then(done,function(){document.execCommand&&document.execCommand('copy');done()})}catch(e){try{document.execCommand('copy');done()}catch(_){}}
+    },text:'Copy text'}));
+  }
+  async function doSubmit(){
+    btn.disabled=true;btn.textContent='Saving…';
+    try{
+      if(ENDPOINT&&ENDPOINT.indexOf('https://')===0){
+        var res=await fetch(ENDPOINT,{method:'POST',body:JSON.stringify(payload())});
+        var j=await res.json();
+        if(!j||!j.ok)throw new Error(j&&j.error||'failed');
+      }else if(dbRef){
+        await dbRef.ref.set(payload());
+      }else{throw new Error('nodb')}
+      S.submitted=true;refresh();
+      out.textContent='';out.appendChild(h('div',{class:'okbox',role:'status',text:'Saved. Your faculty coordinator can now see your profile. To update it later, submit again with the same register number.'}));
+      btn.textContent='Update my profile';btn.disabled=false;
+    }catch(e){
+      btn.textContent=S.submitted?'Update my profile':'Submit my profile';btn.disabled=false;
+      copyBlock('Could not reach the department sheet, but nothing was lost. Check your internet and try again, or copy the text below and send it to your faculty coordinator.');
+    }
+  }
+  upd();
+  return [h('h2',{text:'Check and submit'}),h('p',{class:'lead',text:'This is what the department will receive. Go back to any step to change it.'}),sum,
+    h('label',{class:'check',for:'c1'},c1,h('span',null,h('b',{text:'Required. '}),'I agree that the department may keep these details in its records and use them for internal skill reports.')),
+    h('label',{class:'check',for:'c2'},c2,h('span',null,h('b',{text:'Optional. '}),'The department may share my profile and mobile number with companies that ask for students with my skills. I can withdraw this at any time.')),
+    miss,btn,out];
+}
+
+var PANELS=[pWho,pSkills,pCerts,pProjects,pInterns,pComps,pGoals,pSubmit];
+function go(i){
+  cur=Math.max(0,Math.min(STEPS.length-1,i));
+  var p=$('panel');p.textContent='';
+  PANELS[cur]().forEach(function(n){p.appendChild(n)});
+  var nav=h('div',{class:'nav'},
+    cur>0?h('button',{type:'button',class:'btn ghost',onclick:function(){go(cur-1);window.scrollTo({top:0,behavior:'smooth'})},text:'Back'}):h('span'),
+    cur<STEPS.length-1?h('button',{type:'button',class:'btn primary',onclick:function(){go(cur+1);window.scrollTo({top:0,behavior:'smooth'})},text:'Next: '+STEPS[cur+1].t}):h('span'));
+  p.appendChild(nav);
+  refresh();
+}
+
+/* ---------- boot ---------- */
+function merge(d){
+  if(!d||typeof d!=='object')return;
+  var b=blank();
+  ['p','avail','consent','none'].forEach(function(k){if(d[k])Object.assign(b[k],d[k])});
+  ['certs','projects','interns','comps','interests','extra'].forEach(function(k){if(Array.isArray(d[k]))b[k]=d[k]});
+  if(d.skills){
+    if(Array.isArray(d.skills))d.skills.forEach(function(s){b.skills[s.tool]=s.level});
+    else b.skills=d.skills;
+  }
+  b.submitted=!!d.submitted;
+  S=b;
+}
+function start(saved){
+  var d=saved&&saved.p?saved:null;
+  if(!d){try{d=JSON.parse(localStorage.getItem('ct360-draft')||'null')}catch(e){d=null}}
+  merge(d);
+  go(0);
+  try{window.claude&&window.claude.hot&&window.claude.hot.snapshot&&window.claude.hot.snapshot(function(){return JSON.parse(JSON.stringify(S))})}catch(e){}
+  connect();
+}
+async function connect(){
+  try{
+    var db=await window.claude.use('db'),user=await window.claude.use('user');
+    if(!db||!user)return;
+    var id=await user.id();
+    var ref=db.doc('profiles/'+id);
+    dbRef={ref:ref};
+    var snap=await ref.get();
+    var data=snap&&typeof snap.data==='function'?snap.data():snap;
+    if(data&&data.p&&!S.p.name){merge(Object.assign({},data,{submitted:true}));go(cur)}
+  }catch(e){}
+}
+if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);
+else start(window.claude&&window.claude.hot&&window.claude.hot.data||{});
+})();
+</script>
+</body>
+</html>
